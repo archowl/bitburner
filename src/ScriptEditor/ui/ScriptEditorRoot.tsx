@@ -324,11 +324,7 @@ export function Root(props: IProps): React.ReactElement {
       l.language.tokenizer.root.unshift([new RegExp('\\bthis\\b'), { token: "this" }]);
     })();
 
-    let source: string;
-    if(Settings.AlternateStaticRamAlgorithm)
-      source = libSourceAlt + "";
-    else
-      source = (libSource + "").replace(/export /g, "");
+    let source = libSourceAlt + "";
     monaco.languages.typescript.javascriptDefaults.addExtraLib(source, "netscript.d.ts");
     monaco.languages.typescript.typescriptDefaults.addExtraLib(source, "netscript.d.ts");
     loadThemes(monaco);

@@ -82,48 +82,45 @@ export async function executeJSScript(
   const loadedModule = await script.module;
 
   let ns = workerScript.env.vars;
-  if(Settings.AlternateStaticRamAlgorithm){
-    // If using the alternate RAM algorithm, wrap NS in a proxy that detects old-style calls and instructs them on how
-    //  to replace them
+  // wrap NS in a proxy that detects old-style calls and instructs them on how to replace them
 
-    function proxyFor(original: any, name: string, module: string, prototype?: any): any {
-      return new Proxy(original, {
-        // Override so `xyz instanceof NS` checks work
-        // eslint-disable-next-line
-        getPrototypeOf(target: any): object | null {
-          return prototype ?? Object.getPrototypeOf(target);
-        },
-        get(target: any, key: string | symbol){
-          if(key === nsSymbol)
-            return original;
-          if(typeof key === 'symbol')
-            return original[key];
-          if(module === 'ns' && key === 'args'){
-            throw makeRuntimeRejectMsg(workerScript,
-              `Cannot get ns.args. New syntax is required with the alt static RAM algorithm:\n` +
-              `import {getArgs} from "ns";\n` +
-              `...\n` +
-              `getArgs(ns)`
-            );
-          }
-          const value = original[key];
-          if(typeof value === 'function'){
-            throw makeRuntimeRejectMsg(workerScript,
-              `Cannot call ${name}.${key}. New syntax is required with the alt static RAM algorithm:\n` +
-              `import {${key}} from "${module}";\n` +
-              `...\n` +
-              `${key}(ns, ...)`
-            );
-          }
-          if(typeof value === 'object' && value != null)
-            return proxyFor(original[key], `${name}.${key}`, `${module}/${key}`);
+  function proxyFor(original: any, name: string, module: string, prototype?: any): any {
+    return new Proxy(original, {
+      // Override so `xyz instanceof NS` checks work
+      // eslint-disable-next-line
+      getPrototypeOf(target: any): object | null {
+        return prototype ?? Object.getPrototypeOf(target);
+      },
+      get(target: any, key: string | symbol){
+        if(key === nsSymbol)
+          return original;
+        if(typeof key === 'symbol')
           return original[key];
+        if(module === 'ns' && key === 'args'){
+          throw makeRuntimeRejectMsg(workerScript,
+            `Cannot get ns.args. New syntax is required with the alt static RAM algorithm:\n` +
+            `import {getArgs} from "ns";\n` +
+            `...\n` +
+            `getArgs(ns)`
+          );
         }
-      });
-    }
-
-    ns = proxyFor(ns, 'ns', 'ns', NS.prototype);
+        const value = original[key];
+        if(typeof value === 'function'){
+          throw makeRuntimeRejectMsg(workerScript,
+            `Cannot call ${name}.${key}. New syntax is required with the alt static RAM algorithm:\n` +
+            `import {${key}} from "${module}";\n` +
+            `...\n` +
+            `${key}(ns, ...)`
+          );
+        }
+        if(typeof value === 'object' && value != null)
+          return proxyFor(original[key], `${name}.${key}`, `${module}/${key}`);
+        return original[key];
+      }
+    });
   }
+
+  ns = proxyFor(ns, 'ns', 'ns', NS.prototype);
 
   // TODO: putting await in a non-async function yields unhelpful
   // "SyntaxError: unexpected reserved word" with no line number information.
