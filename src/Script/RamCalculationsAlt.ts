@@ -669,12 +669,15 @@ export function calculateRamUsage(
     const lookup = new Map<string, string>();
 
     for(const script of otherScripts){
+      let name = script.filename;
       // only NS2 supported, sorry
-      if(!script.filename.endsWith('.js'))
+      if(!name.endsWith('.js'))
         continue;
+      if(name.startsWith('/'))
+        name = name.slice(1);
       // register the file both with and without the extension
-      lookup.set(script.filename, script.code);
-      lookup.set(script.filename.slice(0, -3), script.code);
+      lookup.set(name, script.code);
+      lookup.set(name.slice(0, -3), script.code);
     }
     lookup.set(filename, code);
 
