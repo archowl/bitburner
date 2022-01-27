@@ -377,6 +377,10 @@ export const RamCosts: IMap<any> = {
     // Easter egg function
     break: 0,
   },
+
+  exploit: 0,
+  bypass: 0,
+  alterReality: 0
 };
 
 export function getRamCost(player: IPlayer, ...args: string[]): number {
